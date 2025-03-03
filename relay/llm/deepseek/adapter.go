@@ -25,7 +25,7 @@ func (api *api) Match(ctx *gin.Context, model string) (ok bool, err error) {
 		return
 	}
 
-	ok = model[9:] == "chat" || model[9:] == "reasoner"
+	ok = model[9:] == "chat" || model[9:] == "reasoner" || model[9:] == "reasoner-search" || model[9:] == "search"
 	return
 }
 
@@ -37,7 +37,17 @@ func (api *api) Models() (slice []model.Model) {
 			Created: 1686935002,
 			By:      Model + "-adapter",
 		}, model.Model{
+			Id:      Model + "-search",
+			Object:  "model",
+			Created: 1686935002,
+			By:      Model + "-adapter",
+		}, model.Model{
 			Id:      Model + "-reasoner",
+			Object:  "model",
+			Created: 1686935002,
+			By:      Model + "-adapter",
+		}, model.Model{
+			Id:      Model + "-reasoner-search",
 			Object:  "model",
 			Created: 1686935002,
 			By:      Model + "-adapter",
