@@ -378,8 +378,8 @@ label:
 	request = deepseekRequest{
 		ChatSessionId:   data["id"].(string),
 		RefFileIds:      make([]int, 0),
-		ThinkingEnabled: completion.Model[9:] == "reasoner",
-		SearchEnabled:   false,
+		ThinkingEnabled: completion.Model[9:] == "reasoner" || completion.Model[9:] == "search-reasoner,
+		SearchEnabled:   completion.Model[9:] == "search" || completion.Model[9:] == "search-reasoner,
 
 		Message: contentBuffer.String(),
 	}
