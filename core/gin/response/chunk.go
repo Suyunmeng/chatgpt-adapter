@@ -38,6 +38,12 @@ var (
 		"invalid_api",
 		"invalid usage",
 		"permission_denied",
+
+		// corsor
+		"unauthenticated",
+
+		// zed
+		"Payment Required",
 	}
 )
 

@@ -1,4 +1,4 @@
-package grok
+package zed
 
 import (
 	"chatgpt-adapter/core/common/toolcall"
@@ -26,12 +26,12 @@ func toolChoice(ctx *gin.Context, env *env.Environment, proxies, cookie string, 
 			},
 		}
 
-		request, err := convertRequest(ctx, env, completion)
+		request, err := convertRequest(ctx, completion)
 		if err != nil {
 			return "", err
 		}
 
-		r, err := fetch(ctx, proxies, cookie, request)
+		r, err := fetch(ctx, env, proxies, cookie, request)
 		if err != nil {
 			return "", err
 		}

@@ -1,12 +1,10 @@
-package qodo
+package zed
 
 import (
 	"bufio"
-	"chatgpt-adapter/core/gin/model"
 	"encoding/json"
 	"io"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
@@ -15,23 +13,35 @@ import (
 	"chatgpt-adapter/core/gin/response"
 	"chatgpt-adapter/core/logger"
 	"github.com/gin-gonic/gin"
-	"github.com/iocgo/sdk/env"
 )
 
 const (
 	ginTokens = "__tokens__"
 )
 
-type qodoResponse struct {
-	SessionId string `json:"session_id"`
-	Data      struct {
-		Tool     string `json:"tool"`
-		ToolArgs struct {
-			Data string `json:"data"`
-		} `json:"tool_args"`
-	} `json:"data"`
-	Type    string `json:"type"`
-	SubType string `json:"sub_type"`
+type zedResponse struct {
+	Type         string      `json:"type"`
+	Index        int         `json:"index"`
+	ContentBlock interface{} `json:"content_block"`
+	Delta        struct {
+		Type         string `json:"type"`
+		Text         string `json:"text"`
+		StopReason   string `json:"stop_reason"`
+		StopSequence string `json:"stop_sequence"`
+	} `json:"delta"`
+	Message struct {
+		Id      string        `json:"id"`
+		Type    string        `json:"type"`
+		Role    string        `json:"role"`
+		Content []interface{} `json:"content"`
+		Model   string        `json:"model"`
+		Usage   struct {
+			InputTokens              int `json:"input_tokens"`
+			OutputTokens             int `json:"output_tokens"`
+			CacheCreationInputTokens int `json:"cache_creation_input_tokens"`
+			CacheReadInputTokens     int `json:"cache_read_input_tokens"`
+		} `json:"usage"`
+	} `json:"message"`
 }
 
 func waitMessage(r *http.Response, cancel func(str string) bool) (content string, err error) {
@@ -48,7 +58,7 @@ func waitMessage(r *http.Response, cancel func(str string) bool) (content string
 			return
 		}
 
-		var res qodoResponse
+		var res zedResponse
 		if len(dataBytes) == 0 {
 			continue
 		}
@@ -59,27 +69,16 @@ func waitMessage(r *http.Response, cancel func(str string) bool) (content string
 			continue
 		}
 
-		delta := res.Data.ToolArgs
-		if delta.Data == "" {
+		delta := res.Delta
+		if delta.StopReason == "end_turn" {
+			break
+		}
+
+		if delta.Type != "text_delta" {
 			continue
 		}
 
-		var obj model.Keyv[interface{}]
-		if err = json.Unmarshal([]byte(delta.Data), &obj); err != nil {
-			logger.Warn(err)
-			continue
-		}
-
-		obj = obj.GetKeyv("data")
-		if obj == nil {
-			continue
-		}
-
-		if obj.GetString("title") != "Chat" {
-			continue
-		}
-
-		raw := obj.GetString("content")
+		raw := delta.Text
 		logger.Debug("----- raw -----")
 		logger.Debug(raw)
 		content += raw
@@ -94,8 +93,6 @@ func waitResponse(ctx *gin.Context, r *http.Response, sse bool) (content string)
 	created := time.Now().Unix()
 	logger.Infof("waitResponse ...")
 	tokens := ctx.GetInt(ginTokens)
-	thinkReason := env.Env.GetBool("server.think_reason")
-	reasoningContent := ""
 
 	onceExec := sync.OnceFunc(func() {
 		if !sse {
@@ -107,11 +104,8 @@ func waitResponse(ctx *gin.Context, r *http.Response, sse bool) (content string)
 		matchers = common.GetGinMatchers(ctx)
 	)
 
-	//matchers = addUnpackMatcher(env.Env, matchers)
-
 	defer r.Body.Close()
 	reader := bufio.NewReader(r.Body)
-	think := 0
 	for {
 		dataBytes, _, err := reader.ReadLine()
 		if err == io.EOF {
@@ -127,7 +121,7 @@ func waitResponse(ctx *gin.Context, r *http.Response, sse bool) (content string)
 			return
 		}
 
-		var res qodoResponse
+		var res zedResponse
 		if len(dataBytes) == 0 {
 			continue
 		}
@@ -138,50 +132,16 @@ func waitResponse(ctx *gin.Context, r *http.Response, sse bool) (content string)
 			continue
 		}
 
-		reasonContent := ""
-		delta := res.Data.ToolArgs
-		if delta.Data == "" {
+		delta := res.Delta
+		if delta.StopReason == "end_turn" {
+			break
+		}
+
+		if delta.Type != "text_delta" {
 			continue
 		}
 
-		var obj model.Keyv[interface{}]
-		if err = json.Unmarshal([]byte(delta.Data), &obj); err != nil {
-			logger.Warn(err)
-			continue
-		}
-
-		obj = obj.GetKeyv("data")
-		if obj == nil {
-			continue
-		}
-
-		if obj.GetString("title") != "Chat" {
-			continue
-		}
-
-		raw := obj.GetString("content")
-		if thinkReason && think == 0 {
-			if strings.HasPrefix(raw, "<think>") {
-				reasonContent = raw[7:]
-				raw = ""
-				think = 1
-			}
-		}
-
-		if thinkReason && think == 1 {
-			reasonContent = raw
-			if strings.HasPrefix(raw, "</think>") {
-				reasonContent = ""
-				think = 2
-			}
-
-			raw = ""
-			logger.Debug("----- think raw -----")
-			logger.Debug(reasonContent)
-			reasoningContent += reasonContent
-			goto label
-		}
-
+		raw := delta.Text
 		logger.Debug("----- raw -----")
 		logger.Debug(raw)
 		onceExec()
@@ -191,13 +151,12 @@ func waitResponse(ctx *gin.Context, r *http.Response, sse bool) (content string)
 			continue
 		}
 
-	label:
 		if raw == response.EOF {
 			break
 		}
 
 		if sse {
-			response.ReasonSSEResponse(ctx, Model, raw, reasonContent, created)
+			response.SSEResponse(ctx, Model, raw, created)
 		}
 		content += raw
 	}
@@ -205,9 +164,9 @@ func waitResponse(ctx *gin.Context, r *http.Response, sse bool) (content string)
 	if content == "" && response.NotSSEHeader(ctx) {
 		return
 	}
-	ctx.Set(vars.GinCompletionUsage, response.CalcUsageTokens(reasoningContent+content, tokens))
+	ctx.Set(vars.GinCompletionUsage, response.CalcUsageTokens(content, tokens))
 	if !sse {
-		response.ReasonResponse(ctx, Model, content, reasoningContent)
+		response.Response(ctx, Model, content)
 	} else {
 		response.SSEResponse(ctx, Model, "[DONE]", created)
 	}
