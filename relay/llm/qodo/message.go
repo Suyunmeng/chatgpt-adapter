@@ -138,6 +138,10 @@ func waitResponse(ctx *gin.Context, r *http.Response, sse bool) (content string)
 			continue
 		}
 
+		if res.SubType == "code_implementation_end" {
+			continue
+		}
+
 		reasonContent := ""
 		delta := res.Data.ToolArgs
 		if delta.Data == "" {
