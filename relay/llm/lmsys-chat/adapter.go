@@ -15,10 +15,17 @@ var (
 	Model = "lmsys-chat"
 
 	modelMap = map[string]string{
+		"gpt-5-high":                              "983bc566-b783-4d28-b24c-3c8b08eb1086",
+		"gpt-5-chat":                              "4b11c78c-08c8-461c-938e-5fc97d56a40d",
 		"gpt-4.1-2025-04-14":                      "14e9311c-94d2-40c2-8c54-273947e208b0",
+		"o4-mini-2025-04-16":                      "f1102bbf-34ca-468f-a9fc-14bcf63f315b",
 		"gemini-2.5-pro":                          "e2d9d353-6dbe-4414-bf87-bd289d523726",
 		"claude-opus-4-20250514":                  "ee116d12-64d6-48a8-88e5-b2d06325cdd2",
 		"claude-3-7-sonnet-20250219-thinking-32k": "be98fcfd-345c-4ae1-9a82-a19123ebf1d2",
+		"claude-sonnet-4-20250514-thinking-32k":   "4653dded-a46b-442a-a8fe-9bb9730e2453",
+		"deepseek-v3.1":                           "30dfdea7-b4bc-4dab-8515-5d93917c7f4f",
+		"deepseek-v3.1-thinking":                  "cff3fc67-4207-4dff-967f-f4de61115836",
+		"grok-4-0709":                             "b9edb8e9-4e98-49e7-8aaf-ae67e9797a11",
 	}
 )
 

@@ -27,20 +27,19 @@ func (api *api) Match(ctx *gin.Context, model string) (ok bool, err error) {
 
 	slice := api.env.GetStringSlice("qodo.model")
 	for _, mod := range append(slice, []string{
-		"claude-4-sonnet",
-		"claude-4-opus",
-		"claude-3-5-sonnet",
-		"claude-3-7-sonnet",
+		"gpt-5-thinking",
+		"gpt-5-pro",
 		"gpt-4.1",
+		"gpt-4o",
 		"o3",
 		"o4-mini",
-		"gpt-4o",
+		"claude-4-sonnet",
+		"claude-4-1-opus",
+		"claude-3-5-sonnet",
+		"claude-3-7-sonnet",
+		"grok-4",
 		"gemini-2.0-flash",
 		"gemini-2.5-pro",
-		"deepseek-r1",
-		"deepseek-r1-full",
-		"o1",
-		"o3-mini-high",
 	}...) {
 		if model[5:] == mod {
 			ok = true
