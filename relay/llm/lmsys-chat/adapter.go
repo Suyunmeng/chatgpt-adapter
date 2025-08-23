@@ -17,6 +17,7 @@ var (
 	modelMap = map[string]string{
 		"gpt-5-high":                              "983bc566-b783-4d28-b24c-3c8b08eb1086",
 		"gpt-5-chat":                              "4b11c78c-08c8-461c-938e-5fc97d56a40d",
+		"gpt-5-mini-high":                         "5fd3caa8-fe4c-41a5-a22c-0025b58f4b42",
 		"gpt-4.1-2025-04-14":                      "14e9311c-94d2-40c2-8c54-273947e208b0",
 		"o4-mini-2025-04-16":                      "f1102bbf-34ca-468f-a9fc-14bcf63f315b",
 		"gemini-2.5-pro":                          "e2d9d353-6dbe-4414-bf87-bd289d523726",
