@@ -17,6 +17,15 @@ jobs:
     permissions:
       contents: read
       packages: write
+    strategy:
+      matrix:
+        include:
+          - dockerfile: deploy/Dockerfile
+            tag: latest
+            platforms: linux/amd64,linux/arm64
+          - dockerfile: deploy/Dockerfile-BL
+            tag: latest-aio
+            platforms: linux/amd64
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -42,14 +51,14 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=latest
+            type=raw,value=${{ matrix.tag }}
 
-      - name: Build and push multi-platform Docker image
+      - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: deploy/Dockerfile
-          platforms: linux/amd64,linux/arm64
+          file: ${{ matrix.dockerfile }}
+          platforms: ${{ matrix.platforms }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
