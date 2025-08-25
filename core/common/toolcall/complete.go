@@ -314,7 +314,7 @@ func hex(completion model.Completion) (hash string) {
 			}
 			mod = "coze" + s
 
-		case "custom", "lmsys":
+		case "custom":
 			mod = mod[pos+1:]
 		}
 	}
