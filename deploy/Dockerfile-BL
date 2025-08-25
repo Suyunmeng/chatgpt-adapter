@@ -14,7 +14,7 @@ RUN apt update \
   && apt-get install -y curl unzip wget gnupg2
 
 # 下载过盾文件
-RUN curl -JLO https://raw.githubusercontent.com/Suyunmeng/chatgpt-adapter/refs/heads/hel/bin.zip
+RUN curl -JLO https://raw.githubusercontent.com/bincooo/chatgpt-adapter/refs/heads/hel/bin.zip
 RUN echo -e 'server:\n  port: 8080' > ./config.yaml
 
 # Install google
