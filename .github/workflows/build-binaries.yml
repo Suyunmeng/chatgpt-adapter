@@ -1,0 +1,70 @@
+name: Build Binaries
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '*'
+
+jobs:
+  build:
+    name: Build for ${{ matrix.goos }}-${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            output: bin/linux/server
+          - goos: linux
+            goarch: arm64
+            output: bin/linux/server-arm64
+          - goos: darwin
+            goarch: amd64
+            output: bin/osx/server
+          - goos: windows
+            goarch: amd64
+            output: bin/windows/server.exe
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Install iocgo
+        run: |
+          go clean -cache
+          go install -ldflags="-s -w" -trimpath ./cmd/iocgo
+
+      - name: Build binary
+        env:
+          CGO_ENABLED: 0
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          mkdir -p $(dirname ${{ matrix.output }})
+          go build -toolexec iocgo -ldflags="-s -w" -o ${{ matrix.output }} -trimpath main.go
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: chatgpt-adapter-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: ${{ matrix.output }}
+          retention-days: 30
