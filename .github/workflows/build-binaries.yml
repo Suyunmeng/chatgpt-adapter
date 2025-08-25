@@ -67,4 +67,4 @@ jobs:
         with:
           name: chatgpt-adapter-${{ matrix.goos }}-${{ matrix.goarch }}
           path: ${{ matrix.output }}
-          retention-days: 30
+          retention-days: 1
