@@ -7,11 +7,14 @@ import (
 	"chatgpt-adapter/core/gin/response"
 	"chatgpt-adapter/core/logger"
 	"github.com/gin-gonic/gin"
+	"github.com/iocgo/sdk/env"
 )
 
 func toolChoice(ctx *gin.Context, completion model.Completion) bool {
 	logger.Info("completeTools ...")
 	echo := ctx.GetBool(vars.GinEcho)
+	proxied := env.Env.GetString("server.proxied")
+	cookie := ctx.GetString("token")
 
 	exec, err := toolcall.ToolChoice(ctx, completion, func(message string) (string, error) {
 		if echo {
@@ -31,7 +34,7 @@ func toolChoice(ctx *gin.Context, completion model.Completion) bool {
 			return "", err
 		}
 
-		r, err := fetch(ctx.Request.Context(), ctx.GetString("token"), newMessages, GetModelId(completion.Model))
+		r, err := fetch(ctx.Request.Context(), proxied, cookie, newMessages, GetModelId(completion.Model))
 		if err != nil {
 			return "", err
 		}

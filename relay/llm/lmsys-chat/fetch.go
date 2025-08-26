@@ -49,7 +49,7 @@ type LmsysChatMessage struct {
 	FailureReason           interface{}   `json:"failureReason"`
 }
 
-func fetch(ctx context.Context, cookie string, messages, modelId string) (response *http.Response, err error) {
+func fetch(ctx context.Context, proxied, cookie string, messages, modelId string) (response *http.Response, err error) {
 
 	// 获取 cf_bm cookie 配置并合并到请求 cookie 中
 	cfBmCookie := env.Env.GetString("lmsys-chat.cf_bm")
@@ -104,6 +104,7 @@ func fetch(ctx context.Context, cookie string, messages, modelId string) (respon
 
 	response, err = emit.ClientBuilder(common.HTTPClient).
 		Context(ctx).
+		Proxies(proxied).
 		Header("User-Agent", userAgent).
 		Header("Accept-Language", "en-US,en;q=0.5").
 		Header("Cache-Control", "no-cache").

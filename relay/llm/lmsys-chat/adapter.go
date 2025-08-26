@@ -93,6 +93,8 @@ func (api *api) ToolChoice(ctx *gin.Context) (ok bool, err error) {
 
 func (api *api) Completion(ctx *gin.Context) (err error) {
 	var (
+		cookie     = ctx.GetString("token")
+		proxied    = api.env.GetString("server.proxied")
 		completion = common.GetGinCompletion(ctx)
 	)
 
@@ -103,7 +105,7 @@ func (api *api) Completion(ctx *gin.Context) (err error) {
 		return
 	}
 	ctx.Set(ginTokens, response.CalcTokens(newMessages))
-	resp, err := fetch(ctx.Request.Context(), ctx.GetString("token"), newMessages, GetModelId(completion.Model))
+	resp, err := fetch(ctx.Request.Context(), proxied, cookie, newMessages, GetModelId(completion.Model))
 	if err != nil {
 		logger.Error(err)
 		return
