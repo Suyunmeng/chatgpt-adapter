@@ -2,10 +2,13 @@ package lmsys_chat
 
 import (
 	"chatgpt-adapter/core/common"
+	"chatgpt-adapter/core/logger"
 	"context"
 	"github.com/bincooo/emit.io"
 	"github.com/google/uuid"
+	"github.com/iocgo/sdk/env"
 	"net/http"
+	"strings"
 	"sync"
 )
 
@@ -47,6 +50,16 @@ type LmsysChatMessage struct {
 }
 
 func fetch(ctx context.Context, cookie string, messages, modelId string) (response *http.Response, err error) {
+
+	// 获取 cf_bm cookie 配置并合并到请求 cookie 中
+	cfBmCookie := env.Env.GetString("lmsys-chat.cf_bm")
+	if cfBmCookie != "" {
+		if cookie != "" {
+			cookie = cookie + "; " + cfBmCookie
+		} else {
+			cookie = cfBmCookie
+		}
+	}
 
 	sessionId := uuid.NewString()
 	messageId := uuid.NewString()
@@ -102,5 +115,31 @@ func fetch(ctx context.Context, cookie string, messages, modelId string) (respon
 		POST(baseUrl+"/api/stream/create-evaluation").
 		Body(req).
 		DoC(emit.Status(http.StatusOK), emit.IsSTREAM)
+	
+	// 检查响应头中是否有新的 cf_bm cookie 并更新配置
+	if err == nil && response != nil {
+		updateCfBmCookie(response)
+	}
+	
 	return
+}
+
+// updateCfBmCookie 检查响应头中的 Set-Cookie，如果包含 __cf_bm，则更新配置
+func updateCfBmCookie(response *http.Response) {
+	setCookies := response.Header.Values("Set-Cookie")
+	for _, cookieStr := range setCookies {
+		if strings.Contains(cookieStr, "__cf_bm=") {
+			// 提取 __cf_bm cookie 值
+			parts := strings.Split(cookieStr, ";")
+			if len(parts) > 0 {
+				cfBmPart := strings.TrimSpace(parts[0])
+				if strings.HasPrefix(cfBmPart, "__cf_bm=") {
+					// 更新环境变量中的 cf_bm 配置
+					env.Env.Set("lmsys-chat.cf_bm", cfBmPart)
+					logger.Infof("Updated lmsys-chat cf_bm cookie: %s", cfBmPart)
+					break
+				}
+			}
+		}
+	}
 }
